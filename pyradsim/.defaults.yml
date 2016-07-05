@@ -1,0 +1,18 @@
+hydrometeors:
+    permittivity: 8.5871375786139676+1.6977965395728176j
+    canting_angle_std: 10
+    psd: [COSMO_1mom_rain,0.0001] # Marshall-Palmer with R = 2 mm/hr
+    psd_range: [0.1,20]
+    aspect_ratio: 0.9
+geometry:
+    elevation_angle: 0
+    azimuth: 0
+    position: [1,1,1]
+    size: [1,1,1]
+atmosphere:
+   T: 283
+   P: 1015 # Not used currently...
+radar:
+   frequency: 5.6 # In GHZ
+weight: 1
+

@@ -1,0 +1,26 @@
+box_1: # Name of the box
+    hydrometeors: 
+        rain: 
+            dielectric_constant: water
+            canting_angle_std: 15
+            psd: 1000**(-0.5*D)
+            psd_range: [0.1,10]
+            aspect_ratio: Thurai_2007
+        snow:
+            dielectric_constant: 1.23+0.0015j
+            canting_angle_std: 30
+            psd: ['NormalizedGammaPSD',1000,0.5,4] 
+            psd_range: [0.1,20]
+            aspect_ratio: 0.89*D**0.08
+    geometry:
+        elevation_angle: 10
+        azimuth: 0
+        position: [0,0,0]
+        size: [1,1,1]
+    atmosphere:
+        T: 298
+        P: 1018 # Not used currently...
+    radar:
+        frequency: 5.6 # In GHZ
+
+    weight: 1

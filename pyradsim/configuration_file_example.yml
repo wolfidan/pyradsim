@@ -1,0 +1,2 @@
+nbins_d: 1024 # or any other positive integer
+sens_analysis: serial # serial or parallel

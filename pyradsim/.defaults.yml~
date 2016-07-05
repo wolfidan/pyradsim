@@ -1,0 +1,13 @@
+
+    permittivity: 8.5871375786139676+1.6977965395728176j)
+    canting_angle_std: 10
+    psd: [ExponentialPSD,8000,3.54] # Marshall-Palmer with R = 2 mm/hr
+    psd_range: [0.1,10]
+    aspect_ratio: 0.9
+    elevation_angle: 0
+    azimuth: 0
+    position: [180,50,0]
+    T: 283
+    P: 1015
+    frequency: 5.6 # In GHZ
+    weight: 1 
