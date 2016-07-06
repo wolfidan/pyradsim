@@ -120,9 +120,19 @@ class SensSimulator(SingleSimulator): # For sensitivity analysis
     def get_pol_vars(self):
         print('Estimation of polarimetric variables with sensitivty analysis')
         print('-------------------------------------------------------------')
+        print('Sensitivity analysis type : ',self.config['sens_analysis'],'\n')
+        
         type_sens_analysis = self.config['sens_analysis']
     
         initial_box_config = self.boxes_dic
+        
+        # Compute reference (i.e. without varying parameters)
+        print('Computing reference')
+        reference = super(SensSimulator,self).get_pol_vars()
+        
+        # Get keys of reference (i.e. pol variable names)
+        boxes_names_ref = list(reference.keys())       
+        key_names_ref = list(reference[boxes_names_ref[0]].keys())
         
         if type_sens_analysis == 'serial':
             dic_sens = {}
@@ -157,30 +167,81 @@ class SensSimulator(SingleSimulator): # For sensitivity analysis
                     # Simulate polarimetric variables
                     pol_vars = super(SensSimulator,self).get_pol_vars()
                     
-                    for k in pol_vars.keys():
-                        if k not in dic_sens[key_str].keys():
-                            dic_sens[key_str][k] = {}
-                            for k2 in pol_vars[k].keys():
-                                dic_sens[key_str][k][k2] = []
+                    for b in pol_vars.keys():
+                        if b not in dic_sens[key_str].keys():
+                            dic_sens[key_str][b] = {}
+                            for k in pol_vars[b].keys():
+                                dic_sens[key_str][b][k] = []
 
-                    for k in pol_vars.keys():
-                        for k2 in pol_vars[k].keys():
-                            dic_sens[key_str][k][k2].append(pol_vars[k][k2])
+                    for b in pol_vars.keys():
+                        for k in dic_sens[key_str][b].keys():
+                            dic_sens[key_str][b][k].append(pol_vars[b][k])
                             
                 # Convert lists to InfoArray
-                for k in dic_sens[key_str].keys():
-                    for k2 in dic_sens[key_str][k].keys():
-                        dic_sens[key_str][k][k2] = InfoArray(dic_sens[key_str][k][k2],
+                for b in dic_sens[key_str].keys():
+                    for k in dic_sens[key_str][b].keys():
+                        dic_sens[key_str][b][k] = InfoArray(dic_sens[key_str][b][k],
                                         [sens_param_name],[sens_values])
-                                           
-        return dic_sens
+                                        
+        elif type_sens_analysis == 'parallel': # ==> This will be very time-consuming
+            dic_sens = {}
+            # Generate all sequences of values
+            dimensions = np.array([p[2] for p in self.sens_params[1]],dtype = int)
+            # Initialize output array
+            
+        
+            sens_params_names = ['/'.join(p) for p in self.sens_params[0]]
+            sens_params_values = [np.linspace(p[0],p[1],p[2]) for p in self.sens_params[1]]  
+            
+            dic_sens = {}
+                   
+            for b in boxes_names_ref:
+                dic_sens[b] = {}
+                for k in key_names_ref:
+                    dic_sens[b][k] = InfoArray(np.zeros(dimensions)+np.nan,
+                                  sens_params_names,sens_params_values)
+    
+            # Generate possible combinations of parameter values
+            combinations = list(itertools.product(*sens_params_values))
+            
+            
+            for i,c in enumerate(combinations):
+                # Get n-D index from 1D index 
+                pos_in_array = np.unravel_index(i,dimensions)
+                
+                working_copy = copy.deepcopy(initial_box_config)
+                print('Step '+str(i+1)+'/'+str(len(combinations)))
+                print('Simulating point ',str(sens_params_names),' = ',str(c))
+                # Modify working copy of boxes dict and assign it to current
+                # simulator
+                for j,key in enumerate(self.sens_params[0]):
+                    current_val = get_from_dict(initial_box_config,key)
+                    set_from_dict(working_copy,key,current_val*c[j])
+                    
+                self.boxes_dic = working_copy
+                              
+                # Simulate polarimetric variables
+                pol_vars = super(SensSimulator,self).get_pol_vars()
+
+                for b in pol_vars.keys():
+                    for k in pol_vars[b].keys():
+                        dic_sens[b][k][pos_in_array] = pol_vars[b][k]
+                                    
+        return reference, dic_sens
         
     def get_integrated_pol_vars(self):
-        print('Estimation of polarimetric variables with sensitivty analysis')
+        print('Estimation of polarimetric variables with sensitivity analysis')
         print('-------------------------------------------------------------')
+        print('Sensitivity analysis type : ',self.config['sens_analysis'],'\n')
         type_sens_analysis = self.config['sens_analysis']
-        print(type_sens_analysis)
         initial_box_config = self.boxes_dic
+
+        # Compute reference (i.e. without varying parameters)
+        print('Computing reference')
+        reference = super(SensSimulator,self).get_integrated_pol_vars()
+        
+        # Get keys of reference (i.e. pol variable names)
+        key_names_ref = list(reference.keys())
         
         if type_sens_analysis == 'serial':
             # Initialize output
@@ -193,11 +254,11 @@ class SensSimulator(SingleSimulator): # For sensitivity analysis
                 working_copy = copy.deepcopy(initial_box_config)
                 
                 n_pts = int(param[2])
-                range_var = np.linspace(param[0],param[1],n_pts)/100
+                range_var = np.linspace(param[0],param[1],n_pts)
                 current_val = get_from_dict(initial_box_config,key)
                 
                 sens_values = []
-                sens_param_name = key_str.split('/')[-1]
+                sens_param_name = key_str
                 if not isinstance(current_val, numbers.Number):
                     sens_param_name += ' factor'
                     
@@ -231,62 +292,53 @@ class SensSimulator(SingleSimulator): # For sensitivity analysis
         elif type_sens_analysis == 'parallel': # ==> This will be very time-consuming
             dic_sens = {}
             # Generate all sequences of values
-            dimensions = [p[2] for p in self.sens_params[1]]
-            sens_values = [np.linspace(p[0],p[1],p[2]) for p in self.sens_params[1]]           
-            combinations = list(itertools.product(*sens_values))
+            dimensions = np.array([p[2] for p in self.sens_params[1]],dtype = int)
+            # Initialize output array
             
-            for c in combinations:
-                print(c)
-#                for key,param in zip(self.sens_params[0],self.sens_params[1]):
-#                    
-#                    key_str = '/'.join(key)
-#                    dic_sens[key_str] = {}
-#                    print('Sensitivity analysis on param:'+str(key))
-#                    working_copy = copy.deepcopy(initial_box_config)
-#                    
-#                    n_pts = int(param[2])
-#                    range_var = np.linspace(param[0],param[1],n_pts)/100
-#                    current_val = get_from_dict(initial_box_config,key)
-#                    
-#                    sens_values = []
+        
+            sens_params_names = ['/'.join(p) for p in self.sens_params[0]]
+            sens_params_values = [np.linspace(p[0],p[1],p[2]) for p in self.sens_params[1]]  
+            
+            dic_sens = {}
+            
+            
+            for k in key_names_ref:
+                dic_sens[k] = InfoArray(np.zeros(dimensions)+np.nan,
+                              sens_params_names,sens_params_values)
+            
+            # Generate possible combinations of parameter values
+            combinations = list(itertools.product(*sens_params_values))
+            
+            
+            for i,c in enumerate(combinations):
+                # Get n-D index from 1D index 
+                pos_in_array = np.unravel_index(i,dimensions)
                 
-#                    sens_param_name = key_str.split('/')[-1]
-#                    if not isinstance(current_val, numbers.Number):
-#                        sens_param_name += ' factor'
-#                        
-#                    for i,r in enumerate(range_var):
-#                        if isinstance(current_val, numbers.Number):
-#                            sens_values.append(r * current_val)
-#                        else:
-#                            sens_values.append(r)
-#                            
-#                        print('Step '+str(i+1)+'/'+str(len(range_var)))
-#                        # Modify working copy of boxes dict and assign it to current
-#                        # simulator
-#                        set_from_dict(working_copy ,key,current_val*r)
-#                        self.boxes_dic = working_copy
-#                                            
-#                        # Simulate polarimetric variables
-#                        pol_vars = super(SensSimulator,self).get_integrated_pol_vars()
-#                        
-#                        for k in pol_vars.keys():
-#                            if k not in dic_sens[key_str].keys():
-#                                dic_sens[key_str][k] = []
-#    
-#                        for k in pol_vars.keys():
-#                                dic_sens[key_str][k].append(pol_vars[k])
-#                                
-#                    # Convert lists to InfoArray
-#                    for k in dic_sens[key_str].keys():
-#                        dic_sens[key_str][k] = InfoArray(dic_sens[key_str][k],[sens_param_name],
-#                                               [sens_values])
+                working_copy = copy.deepcopy(initial_box_config)
+                print('Step '+str(i+1)+'/'+str(len(combinations)))
                 
-#        return dic_sens
+                # Modify working copy of boxes dict and assign it to current
+                # simulator
+                for j,key in enumerate(self.sens_params[0]):
+                    current_val = get_from_dict(initial_box_config,key)
+                    set_from_dict(working_copy,key,current_val*c[j])
+                    
+                self.boxes_dic = working_copy
+                              
+                # Simulate polarimetric variables
+                pol_vars = super(SensSimulator,self).get_integrated_pol_vars()
+
+        
+                for k in pol_vars.keys():
+                    dic_sens[k][pos_in_array]=pol_vars[k]
+
+        
+        return reference, dic_sens
 
 if __name__ == '__main__':
     from pympler import muppy
     s = Simulator('box_file_example.yml','configuration_file_example.yml')
-    out = s.get_integrated_pol_vars()
+    out = s.get_pol_vars()
     all_objects = muppy.get_objects()
     from pympler import summary
     sum1 = summary.summarize(all_objects)

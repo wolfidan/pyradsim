@@ -62,7 +62,7 @@ class InfoArray(np.ndarray):
         strr = 'Data : \n' + super().__str__() +'\n'
         strr +='Attributes: \n'
         for attr in self.attributes.keys():
-            strr += attr + ' : ' + str(self.attributes[attr])
+            strr += attr + ' : ' + str(self.attributes[attr]) +'\n'
         return strr
         
 def create_defaults():

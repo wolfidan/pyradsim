@@ -142,7 +142,7 @@ class Hydrometeor(object):
             # Define GEOMetries
             GEOM = {} 
             GEOM['back'] = (90-self.theta, 180-(90-self.theta), 0., 180, 0.0,0.0) # Backward
-            GEOM['forw'] =(90-self.theta, 90-self.theta, 0., 0.0, 0.0,0.0) # Forward
+            GEOM['forw'] = (90-self.theta, 90-self.theta, 0., 0.0, 0.0,0.0) # Forward
             
 
             # Initialize computing pool
