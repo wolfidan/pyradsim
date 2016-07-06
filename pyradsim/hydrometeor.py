@@ -9,6 +9,7 @@ import numpy as np
 import multiprocessing as mp
 from collections import OrderedDict
 import json
+import gc
 
 from  pyradsim.tmatrix import  flatten_matrices, create_scatterer, compute_pol_var
 import  pyradsim.constants as constants
@@ -103,6 +104,8 @@ class Hydrometeor(object):
         self._integ_S = integ_S
         self._integ_Z = integ_Z
         
+        del N
+        gc.collect()
 
         return self._integ_S, self._integ_Z
 
@@ -143,7 +146,7 @@ class Hydrometeor(object):
             
 
             # Initialize computing pool
-            pool = mp.Pool(processes = mp.cpu_count())
+            pool = mp.Pool(processes = mp.cpu_count(),maxtasksperchild=1)
             
             SZ=list(pool.map(get_SZ_by_D,zip(list_D,all_m,all_ar)))
 
@@ -153,6 +156,9 @@ class Hydrometeor(object):
             self._Z = SZ[1]
             
             self._set_scatter_signature()
+            
+            pool.close()
+
             
         return self._S, self._Z
     

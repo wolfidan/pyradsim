@@ -284,5 +284,12 @@ class SensSimulator(SingleSimulator): # For sensitivity analysis
 #        return dic_sens
 
 if __name__ == '__main__':
+    from pympler import muppy
     s = Simulator('box_file_example.yml','configuration_file_example.yml')
     out = s.get_integrated_pol_vars()
+    all_objects = muppy.get_objects()
+    from pympler import summary
+    sum1 = summary.summarize(all_objects)
+    summary.print_(sum1)
+    
+    
